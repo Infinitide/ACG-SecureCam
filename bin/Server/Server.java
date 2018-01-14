@@ -22,7 +22,6 @@ public class Server {
 		ServerSocket severSocket = ((SSLServerSocketFactory) SSLServerSocketFactory.getDefault()).createServerSocket(15123);
 		while(true) {
 			new ServerThread(severSocket.accept()).start();
-			
 		}
     
 	}

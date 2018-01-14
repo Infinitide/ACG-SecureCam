@@ -13,17 +13,72 @@ import java.net.*;
 import javax.net.ssl.*; 
 import java.io.*;
 import java.nio.file.*;
+import javax.crypto.*;
+import javax.crypto.spec.*;
+import java.util.*;
 
 public class Client { 
+
+	private static ByteArrayOutputStream CACHE;
+	
+	private static void cache(byte[] bytes){
+		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length);
+				baos.write(bytes, 0, bytes.length);
+				CACHE = baos;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private static boolean verify(byte[] ehmac){
+		DataInputStream in = new DataInputStream(new ByteArrayInputStream(CACHE.toByteArray()));;
+		String keyFile = "key.txt";
+		String encodedKey = null;
+
+		byte[] result = null;
+		try {
+			FileReader fread = new FileReader(keyFile);
+			BufferedReader bread = new BufferedReader(fread);
+			encodedKey = bread.readLine();
+			bread.close();
+			
+			byte[] decodedKey = Base64.getDecoder().decode(encodedKey);
+			SecretKey key = new SecretKeySpec(decodedKey, 0, decodedKey.length, "HmacSHA1"); 
+			
+			// Create and initialize a MAC with the key
+			Mac mac = Mac.getInstance("HmacSHA1");
+			mac.init(key);
+			byte[] buffer = new byte[8192];
+			int length;
+			
+			while ((length = in.read(buffer)) != -1)
+				  mac.update(buffer, 0, length);
+			result = mac.doFinal();
+			
+			System.out.println("Mac: " + asHex(result));
+			//System.out.println("Expected: " + asHex(ehmac));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return Arrays.equals(result, ehmac);
+	}
+	
 	public static void main(String [] args) throws IOException {
 		String fname = "image.jpg";
 
 		System.setProperty("javax.net.ssl.trustStore", "securecam.store");
-		Socket socket = ((SSLSocketFactory) SSLSocketFactory.getDefault()).createSocket("127.0.0.1",15123);
-		DataInputStream in = null;
-		
+		Socket socket = ((SSLSocketFactory) SSLSocketFactory.getDefault()).createSocket("localhost",15123);
+		ObjectInputStream in = null;
+		byte[] ehmac;
 		try{
-			in = new DataInputStream(socket.getInputStream());
+			//in = new DataInputStream(socket.getInputStream());
+			in = new ObjectInputStream(socket.getInputStream());
+			ArrayList data = (ArrayList) in.readObject();
+			cache((byte[]) data.get(0));
+			ehmac = (byte[]) data.get(1);
+			
 		} catch (Exception ee) {
 			System.out.println("Check connection please");
 			socket.close();
@@ -32,8 +87,13 @@ public class Client {
 		FileOutputStream fos = new FileOutputStream(fname);
 		
 		try {
-			while (true)
-				fos.write(in.readByte());
+			if (verify(ehmac)){
+				while (true)
+					fos.write(in.readByte());
+			} else {
+				System.out.println("Integrity Compromised. File not written");
+			}
+			
 		} catch (EOFException ee) {
 			System.out.println("File transfer complete");
 			in.close();
@@ -56,7 +116,7 @@ public class Client {
       
 	}
     
-    public static String asHex (byte buf[]) {
+    private static String asHex (byte buf[]) {
 		//Obtain a StringBuffer object
 		StringBuffer strbuf = new StringBuffer(buf.length * 2);
 		int i;
