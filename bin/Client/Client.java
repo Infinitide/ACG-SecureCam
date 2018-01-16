@@ -88,8 +88,9 @@ public class Client {
 		
 		try {
 			if (verify(ehmac)){
+				DataInputStream iin = new DataInputStream(new ByteArrayInputStream(CACHE.toByteArray()));;
 				while (true)
-					fos.write(in.readByte());
+					fos.write(iin.readByte());
 			} else {
 				System.out.println("Integrity Compromised. File not written");
 			}

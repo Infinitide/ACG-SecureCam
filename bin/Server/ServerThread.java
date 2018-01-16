@@ -81,7 +81,7 @@ public class ServerThread extends Thread{
 	}
 	
 	private void initMac() {
-		DataInputStream in = new DataInputStream(new ByteArrayInputStream(CACHE.toByteArray()));;
+		DataInputStream in = new DataInputStream(new ByteArrayInputStream(CACHE.toByteArray()));
 		String keyFile = "key.txt";
 		String encodedKey = null;
 		try {
