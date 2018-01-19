@@ -3,10 +3,7 @@ java:
     - oraclejdk8
     - openjdk8
 
-os:
-    - windows
-    - linux
 
 script:
-    - ant compile
+    - ant
 
