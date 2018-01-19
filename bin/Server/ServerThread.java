@@ -24,8 +24,13 @@ public class ServerThread extends Thread{
 			// get the image from a webcam
 			URL myimage = new URL("http://183.76.13.58:80/SnapshotJPEG?Resolution=640x480");
 			DataInputStream in = null;
+			DataInputStream din = null;
+			ObjectOutputStream oon = null;
+			
 			try{
 				in = new DataInputStream(myimage.openStream());
+				din = new DataInputStream(SOCKET.getInputStream());
+				oon = new ObjectOutputStream(SOCKET.getOutputStream());
 			} catch (Exception ee) {
 				System.out.println("Check internet connection please");
 				SOCKET.close();
@@ -40,23 +45,25 @@ public class ServerThread extends Thread{
 			ArrayList data = new ArrayList();
 			data.add(CACHE.toByteArray());
 			data.add(HMAC);
-			
 			try{
-				ObjectOutputStream oin = new ObjectOutputStream(SOCKET.getOutputStream());
-				//in = new DataInputStream(new ByteArrayInputStream(CACHE.toByteArray()));
-				//while (true) {
-					//dos.writeByte(in.readByte());
-				oin.writeObject(data);
+				oon.writeObject(data);
+			} catch (Exception e) {
 				System.out.println("-------------- Done ----------");
-				oin.close();
-				//}
-			} catch (Exception ee) {
-				ee.printStackTrace();
 			}
-		  
+			
+			String sta = din.readLine();
+			if (sta.equals("Transfer Completed")){
+				System.out.println("Handshake Completed");
+			} else {
+				System.out.println("Handshake Error");
+			}
+			oon.flush();
 			dos.flush();
+			oon.close();
 			dos.close();
+			din.close();
 			SOCKET.close();
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
