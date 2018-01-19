@@ -8,7 +8,7 @@
 		</java>
 	</target>
 	<target name = "compile">
-		<javac srcdir = "./bin/Client" destdir = "./bin/Client">
-		<javac srcdir = "./bin/Server" destdir = "./bin/Server">
+		<javac srcdir = "./bin/Client" destdir = "./bin/Client" />
+		<javac srcdir = "./bin/Server" destdir = "./bin/Server" />
 	</target>
 </project>
