@@ -5,7 +5,6 @@ java:
 
 os:
     - windows
-    - osx
     - linux
 
 script:
