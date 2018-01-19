@@ -3,5 +3,11 @@ java:
     - oraclejdk8
     - openjdk8
 
+os:
+    - windows
+    - osx
+    - linux
+
 script:
     - ant compile
+
