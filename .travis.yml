@@ -2,3 +2,6 @@ language: java
 java:
     - oraclejdk8
     - openjdk8
+
+script:
+    - ant run
