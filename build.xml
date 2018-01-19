@@ -1,10 +1,10 @@
 <project default =  "run" name = "ACG-SecureCam">
 	<target name = "run" depends = "compile">
 		<java classname = "Client">
-			<classpath path = "./bin/Client">
+			<classpath path = "./bin/Client" />
 		</java>
 		<java classname = "Server">
-			<classpath path = "./bin/Server">
+			<classpath path = "./bin/Server" />
 		</java>
 	</target>
 	<target name = "compile">
