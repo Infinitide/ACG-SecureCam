@@ -71,34 +71,38 @@ public class Client {
 		System.setProperty("javax.net.ssl.trustStore", "securecam.store");
 		Socket socket = ((SSLSocketFactory) SSLSocketFactory.getDefault()).createSocket("localhost",15123);
 		ObjectInputStream in = null;
+		DataOutputStream dos = null;
 		byte[] ehmac;
+		
 		try{
 			//in = new DataInputStream(socket.getInputStream());
 			in = new ObjectInputStream(socket.getInputStream());
+			dos = new DataOutputStream(socket.getOutputStream());
 			ArrayList data = (ArrayList) in.readObject();
 			cache((byte[]) data.get(0));
 			ehmac = (byte[]) data.get(1);
-			
 		} catch (Exception ee) {
 			System.out.println("Check connection please");
 			socket.close();
 			return;
 		}
 		FileOutputStream fos = new FileOutputStream(fname);
-		
+		boolean verified = verify(ehmac);
 		try {
-			if (verify(ehmac)){
+			if (verified){
 				DataInputStream iin = new DataInputStream(new ByteArrayInputStream(CACHE.toByteArray()));;
 				while (true)
 					fos.write(iin.readByte());
 			} else {
 				System.out.println("Integrity Compromised. File not written");
 			}
-			
 		} catch (EOFException ee) {
+			dos.writeBytes("Transfer Completed");
 			System.out.println("File transfer complete");
-			in.close();
+			
+			dos.close();
 		}
+		in.close();
 		fos.flush();
 		fos.close();
 		socket.close();
