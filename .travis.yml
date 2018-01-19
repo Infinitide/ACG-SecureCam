@@ -4,4 +4,4 @@ java:
     - openjdk8
 
 script:
-    - ant run
+    - ant compile
