@@ -1,6 +1,8 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.nio.file.*;
 import java.security.*;
 import java.security.spec.*;
@@ -16,6 +18,7 @@ public class Client {
 	private static String SERVER = "127.0.0.1";
 	private static int PORT = 15123;
 	private static String SAVETO = "image.jpg";
+	private static boolean GUI;
 	
 	private static void cache(byte[] bytes){
 		try {
@@ -56,10 +59,19 @@ public class Client {
 		setOptions(args);
 
 		System.setProperty("javax.net.ssl.trustStore", "securecam.store");
+		if (GUI) {
+			initGui();
+		} else {
+			noGui();
+		}
+	}
+	
+	private static void noGui() throws Exception{
+	
 		Socket socket = ((SSLSocketFactory) SSLSocketFactory.getDefault()).createSocket(SERVER, PORT);
 		ObjectInputStream in = null;
 		DataOutputStream dos = null;
-		byte[] ehmac;
+		byte[] signature;
 		
 		try{
 			//in = new DataInputStream(socket.getInputStream());
@@ -67,15 +79,14 @@ public class Client {
 			dos = new DataOutputStream(socket.getOutputStream());
 			ArrayList data = (ArrayList) in.readObject();
 			cache((byte[]) data.get(0));
-			ehmac = (byte[]) data.get(1);
+			signature = (byte[]) data.get(1);
 		} catch (Exception ee) {
 			System.out.println("Check connection please");
 			socket.close();
 			return;
 		}
 		FileOutputStream fos = new FileOutputStream(SAVETO);
-		//boolean verified = verify(ehmac);
-		boolean verified = verifySignature(ehmac);
+		boolean verified = verifySignature(signature);
 		try {
 			if (verified){
 				DataInputStream iin = new DataInputStream(new ByteArrayInputStream(CACHE.toByteArray()));;
@@ -106,6 +117,7 @@ public class Client {
 		myMD5.update(bFile, 0, bFile.length);
 		byte[] md = myMD5.digest();
 		System.out.println("MD5 = " +  asHex(md) );
+		
 	}
 	
 	private static void setOptions(String[] op) throws Exception{
@@ -131,12 +143,17 @@ public class Client {
 		output.setRequired(false);
 		options.addOption(output);
 		
+		Option gui = new Option("g", "gui", false, "Starts Client GUI");
+		gui.setRequired(false);
+		options.addOption(gui);
+		
 		CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
 		
 		try {
             cmd = parser.parse(options, op);
+			GUI = cmd.hasOption("g");
 			
 			if (cmd.hasOption("h")){
 				System.out.println("SecureCam Network Client\n");
@@ -145,7 +162,15 @@ public class Client {
 			}
 			
 			if (cmd.hasOption("s")) {
-				SERVER = cmd.getOptionValue("l");
+				SERVER = cmd.getOptionValue("s");
+				Pattern r = Pattern.compile("([0-9]{1,3}\\.){3}[0-9]{1,3}");
+				Matcher m = r.matcher(SERVER);
+				if (!m.matches()){
+					System.out.println("Invalid IP detected\n");
+					System.out.println("Usage: java Server <options>");
+					System.out.println("Use -h to display help");
+					System.exit(0);
+				}
 			}
 			
 			if (cmd.hasOption("p")) {
@@ -173,5 +198,30 @@ public class Client {
             System.exit(1);
         }
 	}
+	
+    public static void initGui() {
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(ClientGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(ClientGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(ClientGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(ClientGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+		
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new ClientGUI(SERVER, PORT, PUBLICKEY).setVisible(true);
+            }
+        });
+    }
 	
 }
