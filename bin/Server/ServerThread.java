@@ -1,24 +1,26 @@
-import java.net.*;
 import java.io.*;
-import java.nio.file.*;
+import java.net.*;
 import java.util.*;
 import java.text.*;
-import javax.net.ssl.*;
+import java.nio.file.*;
 import java.security.*;
+import java.security.spec.*;
 import javax.crypto.*;
+import javax.net.ssl.*;
 import javax.crypto.spec.*;
 import java.security.spec.*;
 
 public class ServerThread extends Thread{
-	private Socket SOCKET;
 	private Date START;
+	private Socket SOCKET;
+	private String PRIVATEKEY;
 	private ByteArrayOutputStream CACHE;
 	private byte[] SIGNATURE;
-	private final String PRIVATEKEY = "private.key";
 	
-	public ServerThread(Socket socket) {
-		SOCKET = socket;
+	public ServerThread(Socket socket, String pk) {
 		START = new Date();
+		SOCKET = socket;
+		PRIVATEKEY = pk;
 	}
 	
 	public void run() {

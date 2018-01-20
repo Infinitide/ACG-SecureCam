@@ -1,14 +1,8 @@
-<project default =  "run" name = "ACG-SecureCam">
-	<target name = "run" depends = "compile">
-		<java classname = "Server">
-			<classpath path = "./bin/Server" />
-		</java>
-		<java classname = "Client">
-			<classpath path = "./bin/Client" />
-		</java>
-	</target>
+<project default =  "compile" name = "ACG-SecureCam">
+	<property name="SERVER" location="./bin/Server" />
+	<property name="CLIENT" location="./bin/Client" />
 	<target name = "compile">
-		<javac srcdir = "./bin/Client" destdir = "./bin/Client" />
-		<javac srcdir = "./bin/Server" destdir = "./bin/Server" />
+		<javac srcdir = "${CLIENT}" destdir = "${CLIENT}" classpath="${CLIENT}/commons-cli-1.4.jar;."/>
+		<javac srcdir = "${SERVER}" destdir = "${SERVER}" classpath="${SERVER}/commons-cli-1.4.jar;."/>
 	</target>
 </project>

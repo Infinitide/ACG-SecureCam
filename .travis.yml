@@ -8,5 +8,5 @@ os:
     - linux
 
 script:
-    - ant compile
+    - ant
 
