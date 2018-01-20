@@ -1,6 +1,8 @@
 <project default =  "compile" name = "ACG-SecureCam">
+	<property name="SERVER" location="./bin/Server">
+	<property name="CLIENT" location="./bin/Client">
 	<target name = "compile">
-		<javac srcdir = "./bin/Client" destdir = "./bin/Client" />
-		<javac srcdir = "./bin/Server" destdir = "./bin/Server" />
+		<javac srcdir = "${CLIENT}" destdir = "${CLIENT}" classpath="${CLIENT}/commons-cli-1.4.jar;."/>
+		<javac srcdir = "${SERVER}" destdir = "${SERVER}" classpath="${SERVER}/commons-cli-1.4.jar;."/>
 	</target>
 </project>
