@@ -67,7 +67,7 @@ public class Client {
 	}
 	
 	private static void noGui() throws Exception{
-		
+	
 		Socket socket = ((SSLSocketFactory) SSLSocketFactory.getDefault()).createSocket(SERVER, PORT);
 		ObjectInputStream in = null;
 		DataOutputStream dos = null;
