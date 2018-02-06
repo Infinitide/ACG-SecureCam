@@ -86,7 +86,6 @@ public class ClientGUI extends javax.swing.JFrame {
 		
 		img.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         img.setIcon(new javax.swing.ImageIcon(""));
-        img.setVisible(false);
 
         javax.swing.GroupLayout previewLayout = new javax.swing.GroupLayout(preview);
         preview.setLayout(previewLayout);
@@ -118,7 +117,7 @@ public class ClientGUI extends javax.swing.JFrame {
                 .addComponent(saveImg)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
-
+		saveImg.setVisible(false);
         status.setBackground(new java.awt.Color(255, 255, 255));
 
         statBar.setBackground(new java.awt.Color(255, 255, 255));
@@ -168,17 +167,16 @@ public class ClientGUI extends javax.swing.JFrame {
     private void saveImgMouseClicked(java.awt.event.MouseEvent evt) {                                      
 		JFileChooser chooser = new JFileChooser();
 		FileNameExtensionFilter filter = new FileNameExtensionFilter("jpg", "JPG");
+		chooser.setApproveButtonText("Save");
 		chooser.setFileFilter(filter);
 		int returnVal = chooser.showOpenDialog(this);
 		if(returnVal == JFileChooser.APPROVE_OPTION) {
-		   System.out.println("You chose to open this file: " +
-				chooser.getSelectedFile().getName());
-		CONNECTION.save((String) chooser.getSelectedFile().getName());
+			CONNECTION.save((String) chooser.getSelectedFile().getAbsolutePath() + ".jpg", statBar);
 		}
-		img.setVisible(true);
     }
 	
-	private void connectMouseClicked(java.awt.event.MouseEvent evt) {                                     
+	private void connectMouseClicked(java.awt.event.MouseEvent evt) {
+		statBar.setText("Establishing Connection");
         String ip = serverip.getText();
 		Pattern r = Pattern.compile("([0-9]{1,3}\\.){3}[0-9]{1,3}");
 		Matcher m = r.matcher(ip);
@@ -191,7 +189,7 @@ public class ClientGUI extends javax.swing.JFrame {
 				statBar.setText("Port needs to be a integer");
 			}
 			img.setIcon(new javax.swing.ImageIcon(CONNECTION.getCache()));
-			img.setVisible(true);
+			saveImg.setVisible(true);
 		} else {
 			statBar.setText("Enter valid IP Address");
 		}
