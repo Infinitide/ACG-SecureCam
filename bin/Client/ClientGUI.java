@@ -84,7 +84,7 @@ public class ClientGUI extends javax.swing.JFrame {
 
         preview.setMinimumSize(new java.awt.Dimension(640, 480));
 		
-		img.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+		    img.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         img.setIcon(new javax.swing.ImageIcon(""));
 
         javax.swing.GroupLayout previewLayout = new javax.swing.GroupLayout(preview);
@@ -117,7 +117,7 @@ public class ClientGUI extends javax.swing.JFrame {
                 .addComponent(saveImg)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
-		saveImg.setVisible(false);
+		    saveImg.setVisible(false);
         status.setBackground(new java.awt.Color(255, 255, 255));
 
         statBar.setBackground(new java.awt.Color(255, 255, 255));
