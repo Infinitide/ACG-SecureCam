@@ -27,14 +27,14 @@ public class ClientConnection{
 		return CACHE.toByteArray();
 	}
 	
-	public void save(String ouput){
+	public void save(String output, javax.swing.JLabel statBar){
 		try {
-			FileOutputStream fos = new FileOutputStream(ouput);
+			FileOutputStream fos = new FileOutputStream(output);
 			DataInputStream in = new DataInputStream(new ByteArrayInputStream(CACHE.toByteArray()));;
 			while (true)
 				fos.write(in.readByte());
 		} catch (EOFException ee) {
-			System.out.println("File saved");
+			statBar.setText("File saved to " + output);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -65,6 +65,7 @@ public class ClientConnection{
 			Socket socket = ((SSLSocketFactory) SSLSocketFactory.getDefault()).createSocket(SERVER, PORT);
 			ObjectInputStream in = null;
 			DataOutputStream dos = null;
+			statBar.setText("Establishing Connection");
 			
 			try{
 				//in = new DataInputStream(socket.getInputStream());
