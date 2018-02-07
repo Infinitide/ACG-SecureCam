@@ -27,7 +27,7 @@ public class ClientConnection{
 		return CACHE.toByteArray();
 	}
 	
-	public void save(String output, javax.swing.JLabel statBa){
+	public void save(String output, javax.swing.JLabel statBar){
 		try {
 			FileOutputStream fos = new FileOutputStream(output);
 			DataInputStream in = new DataInputStream(new ByteArrayInputStream(CACHE.toByteArray()));;
