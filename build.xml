@@ -2,7 +2,21 @@
 	<property name="SERVER" location="./bin/Server" />
 	<property name="CLIENT" location="./bin/Client" />
 	<target name = "compile">
-		<javac srcdir = "${CLIENT}" destdir = "${CLIENT}" classpath="${CLIENT}/commons-cli-1.4.jar;."/>
-		<javac srcdir = "${SERVER}" destdir = "${SERVER}" classpath="${SERVER}/commons-cli-1.4.jar;."/>
+		<javac srcdir = "${CLIENT}" destdir = "${CLIENT}">
+			<classpath>
+				<pathelement path="."/>
+				<fileset dir="${CLIENT}/lib/">
+					<include name="**/*.jar"/>
+				</fileset>
+			</classpath>
+		</javac>
+		<javac srcdir = "${SERVER}" destdir = "${SERVER}">
+			<classpath>
+				<pathelement path="."/>
+				<fileset dir="${SERVER}/lib/">
+					<include name="**/*.jar"/>
+				</fileset>
+			</classpath>
+		</javac>
 	</target>
 </project>
