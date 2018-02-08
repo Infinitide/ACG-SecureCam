@@ -4,7 +4,7 @@
 	<target name = "compile">
 		<javac srcdir = "${CLIENT}" destdir = "${CLIENT}">
 			<classpath>
-				<pathelement path=".">
+				<pathelement path="."/>
 				<fileset dir="${CLIENT}/lib/">
 					<include name="**/*.jar"/>
 				</fileset>
@@ -12,7 +12,7 @@
 		</javac>
 		<javac srcdir = "${SERVER}" destdir = "${SERVER}">
 			<classpath>
-				<pathelement path=".">
+				<pathelement path="."/>
 				<fileset dir="${SERVER}/lib/">
 					<include name="**/*.jar"/>
 				</fileset>
