@@ -8,6 +8,8 @@ import java.security.PrivateKey;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.X509Certificate;
+import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateException;
 import java.net.ServerSocket;
 import java.io.FileInputStream;
@@ -18,10 +20,17 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class WebCam{
 	
+	private X509Certificate CACERT;
 	private Certificate CERT;
 	private KeyPair KEYPAIR;
 	
-	protected WebCam(String keyStorePath, String keyStorePassword, String aliasName, String aliasPassword) throws UnrecoverableKeyException, FileNotFoundException, KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException{
+	protected WebCam(String keyStorePath, String keyStorePassword, String aliasName, String aliasPassword, String ca) throws UnrecoverableKeyException, FileNotFoundException, KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException{
+		// Load CA Cert
+		CertificateFactory cf = CertificateFactory.getInstance("X.509");
+		FileInputStream readCa = new FileInputStream(ca);
+		CACERT = (X509Certificate) cf.generateCertificate(readCa);
+		readCa.close();
+		
 		//Load keystore using PKCS#12
 		FileInputStream readKeyStore = new FileInputStream(keyStorePath);
 		KeyStore keyStore = KeyStore.getInstance("PKCS12");
@@ -39,11 +48,11 @@ public class WebCam{
 		}
 	}
 	
-	protected void start(InetAddress host, int port, int maxcon){
+	protected void start(InetAddress host, int port, int maxcon) throws CertificateException {
 		try{
 			ServerSocket ssocket = new ServerSocket(port);
 			while (true){
-				new ClientThread(ssocket.accept(), CERT, KEYPAIR).start();
+				new ClientThread(ssocket.accept(), CERT, KEYPAIR, CACERT).start();
 			}
 		} catch (IOException e){
 			e.printStackTrace();

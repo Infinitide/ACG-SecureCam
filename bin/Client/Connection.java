@@ -10,73 +10,109 @@ import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyStore;
 import java.security.Security;
+import java.security.PublicKey;
+import java.security.PrivateKey;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.security.KeyStoreException;
 import java.security.cert.X509Certificate;
 import java.security.cert.CertificateFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.security.UnrecoverableKeyException;
+import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.crypto.tls.Certificate;
+import org.bouncycastle.crypto.tls.TlsCredentials;
 import org.bouncycastle.crypto.tls.DefaultTlsClient;
 import org.bouncycastle.crypto.tls.TlsAuthentication;
 import org.bouncycastle.crypto.tls.TlsClientProtocol;
-import org.bouncycastle.crypto.tls.ServerOnlyTlsAuthentication;
+import org.bouncycastle.crypto.tls.CertificateRequest;
+import org.bouncycastle.crypto.tls.DefaultTlsSignerCredentials;
+import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 
+import org.bouncycastle.crypto.tls.TlsUtils;
+import org.bouncycastle.crypto.tls.SignatureAndHashAlgorithm;
+
 public class Connection {
-	private String HOST;
-	private int PORT;
 	private X509Certificate CACERT;
 	private Socket SOCKET;
 	private ByteArrayOutputStream CACHE;
 	private javax.swing.JLabel STATBAR;
+	private java.security.cert.Certificate CLIENTCERT;
+	private KeyPair KEYPAIR;
+	private boolean VALID = false;
 	
-	public Connection(String host, int port, String ca, javax.swing.JLabel statBar) throws CertificateException, FileNotFoundException, IOException{
-		HOST = host;
-		PORT = port;
+	public Connection(String ca, String keyStorePath, String keyStorePassword, String aliasName, String aliasPassword) throws UnrecoverableKeyException, FileNotFoundException, KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException{
+		// Load CA Cert
 		CertificateFactory cf = CertificateFactory.getInstance("X.509");
 		FileInputStream readCa = new FileInputStream(ca);
 		CACERT = (X509Certificate) cf.generateCertificate(readCa);
 		readCa.close();
-		STATBAR = statBar;
-		start();
-	}
-	
-	public Connection(String host, int port, String ca) throws CertificateException, FileNotFoundException, IOException{
-		HOST = host;
-		PORT = port;
-		CertificateFactory cf = CertificateFactory.getInstance("X.509");
-		FileInputStream readCa = new FileInputStream(ca);
-		CACERT = (X509Certificate) cf.generateCertificate(readCa);
-		readCa.close();
-	}
-	
-	public void start(){
-		Security.addProvider(new BouncyCastleProvider());
 		
+		//Load keystore using PKCS#12
+		FileInputStream readKeyStore = new FileInputStream(keyStorePath);
+		KeyStore keyStore = KeyStore.getInstance("PKCS12");
+		keyStore.load(readKeyStore, keyStorePassword.toCharArray());
+		
+		//Get private key of server from keystore
+		Key key = keyStore.getKey(aliasName, aliasPassword.toCharArray());
+
+		if (key instanceof PrivateKey){
+			CLIENTCERT = keyStore.getCertificate(aliasName);
+			PublicKey pubkey = CLIENTCERT.getPublicKey();
+			KEYPAIR = new KeyPair(pubkey, (PrivateKey) key);
+		} else {
+			throw new UnrecoverableKeyException("Unable to obtain private key");
+		}
+	}
+	public void start(String host, int port, javax.swing.JLabel statBar){
+		STATBAR = statBar;
+		start(host, port);
+	}
+	
+	public void start(String host, int port){
+		Security.addProvider(new BouncyCastleProvider());
 		try{
-			SOCKET = new Socket(HOST, PORT);
+			SOCKET = new Socket(host, port);
+			org.bouncycastle.asn1.x509.Certificate cert = org.bouncycastle.asn1.x509.Certificate.getInstance(ASN1TaggedObject.fromByteArray(CLIENTCERT.getEncoded()));
 			// Create TLS Client Protocol
 			TlsClientProtocol cproto = new TlsClientProtocol(SOCKET.getInputStream(), SOCKET.getOutputStream(), new SecureRandom());
 			
 			// Initialise TLS Connection
 			cproto.connect(new DefaultTlsClient() {
 				public TlsAuthentication getAuthentication() throws IOException{
-					return new ServerOnlyTlsAuthentication() {
+					return new TlsAuthentication() {
 						public void notifyServerCertificate(Certificate serverCert) throws IOException {
 							try {
 								X509Certificate servCert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(serverCert.getCertificateList()[0].getEncoded()));
-								//verifyCert(servCert);
+								verifyCert(servCert);
 							} catch (Exception e){
 								System.out.println("Unable to verify server's certificate: " + e);
-								e.printStackTrace();
 							}
 						};
+						
+						public TlsCredentials getClientCredentials(CertificateRequest certificateRequest) throws IOException{
+							SignatureAndHashAlgorithm signatureAndHashAlgorithm = (SignatureAndHashAlgorithm) TlsUtils.getDefaultRSASignatureAlgorithms().get(0);
+							return new DefaultTlsSignerCredentials(
+								context,
+								new org.bouncycastle.crypto.tls.Certificate(new org.bouncycastle.asn1.x509.Certificate[]{cert}),
+								PrivateKeyFactory.createKey(KEYPAIR.getPrivate().getEncoded()),
+								signatureAndHashAlgorithm
+							);
+						};
+						
 					};
 				}
 			});
 			
+			if (!VALID)
+				close(1);
 			/* Get TLS connection socket stream
 			 * Traffic using this stream will be encrypted
 			 * and decrypted automatically
@@ -93,17 +129,6 @@ public class Connection {
 			e.printStackTrace();
 		}
 	}
-	
-	private void cache(byte[] bytes){
-		try {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length);
-			baos.write(bytes, 0, bytes.length);
-			CACHE = baos;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	
 	
 	public void save(String output, javax.swing.JLabel statBar){
 		save(output);
@@ -123,7 +148,7 @@ public class Connection {
 			}
 			fos.flush();
 			fos.close();
-			SOCKET.close();
+			close(0);
 			
 			// Print MD5
 			MessageDigest myMD5 = null;
@@ -146,14 +171,18 @@ public class Connection {
 	}
 	
 	private void verifyCert(X509Certificate servCert) throws CertificateException{
+		boolean ca = false;
+		boolean valid = false;
+		
 		if (CACERT == null) 
 			throw new IllegalArgumentException("CA Certificate Not Found");
-		if (servCert == null) 
+		if (servCert == null)
 			throw new IllegalArgumentException("Server Certificate Not Found");
 		
 		if (!CACERT.equals(servCert)){
 			try{
 				servCert.verify(CACERT.getPublicKey());
+				ca = true;
 			} catch (Exception e) {
 				throw new CertificateException("Server Cerficate not Trusted");
 			}
@@ -161,8 +190,32 @@ public class Connection {
 		
 		try {
 			servCert.checkValidity();
+			valid = true;
 		} catch (Exception e) {
 			throw new CertificateException("Server Certificate is expired");
+		}
+		VALID = ca && valid;
+	}
+	
+	private void close(int exitCd){
+		try {
+			if (CACHE != null)
+				CACHE.flush();
+			SOCKET.close();
+			if (exitCd != 0)
+				System.exit(exitCd);
+		} catch (IOException e){
+			e.printStackTrace();
+		}
+	}
+	
+	private void cache(byte[] bytes){
+		try {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length);
+			baos.write(bytes, 0, bytes.length);
+			CACHE = baos;
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 	

@@ -4,16 +4,16 @@ import javax.swing.*;
 import javax.swing.filechooser.*;
 
 public class ClientGUI extends javax.swing.JFrame {
-	private static String HOST;
-	private static int PORT;
-	private static String KEY;
-	private ClientConnection CONNECTION;
+	private Connection CONNECTION;
+	private String HOST;
+	private int PORT;
+	private String CACERT;
 	
-	
-    public ClientGUI(String host, int port, String key){
+    public ClientGUI(Connection conn, String host, int port, String ca){
 		HOST = host;
 		PORT = port;
-		KEY = key;
+		CACERT = ca;
+		CONNECTION = conn;
         initComponents();
     }
 
@@ -35,7 +35,7 @@ public class ClientGUI extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         title.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        title.setText("SecureCam Client ");
+        title.setText("SecureCam Client");
         title.setFocusable(false);
 
         serverip.setText(HOST);
@@ -178,13 +178,11 @@ public class ClientGUI extends javax.swing.JFrame {
 	private void connectMouseClicked(java.awt.event.MouseEvent evt) {
 		statBar.setText("Establishing Connection");
         String ip = serverip.getText();
-		Pattern r = Pattern.compile("([0-9]{1,3}\\.){3}[0-9]{1,3}");
-		Matcher m = r.matcher(ip);
-		if (m.matches()){
+		if (ip.matches("([0-9]{1,3}\\.){3}[0-9]{1,3}")){
 			HOST = ip;
 			try {
 				PORT = Integer.parseInt(serverport.getText());
-				CONNECTION = new ClientConnection(HOST, PORT, KEY, statBar);
+				CONNECTION.start(HOST, PORT, statBar);
 			} catch (Exception e) {
 				statBar.setText("Port needs to be a integer");
 			}
