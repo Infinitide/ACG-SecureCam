@@ -8,12 +8,14 @@ public class ClientGUI extends javax.swing.JFrame {
 	private String HOST;
 	private int PORT;
 	private String CACERT;
+	private String SAVETO;
 	
-    public ClientGUI(Connection conn, String host, int port, String ca){
+    public ClientGUI(Connection conn, String host, int port, String ca, String saveto){
 		HOST = host;
 		PORT = port;
 		CACERT = ca;
 		CONNECTION = conn;
+		SAVETO = saveto;
         initComponents();
     }
 
@@ -171,7 +173,7 @@ public class ClientGUI extends javax.swing.JFrame {
 		chooser.setFileFilter(filter);
 		int returnVal = chooser.showOpenDialog(this);
 		if(returnVal == JFileChooser.APPROVE_OPTION) {
-			CONNECTION.save((String) chooser.getSelectedFile().getAbsolutePath() + ".jpg", statBar);
+			CONNECTION.save((String) chooser.getSelectedFile().getAbsolutePath() + ".jpg");
 		}
     }
 	
@@ -182,7 +184,7 @@ public class ClientGUI extends javax.swing.JFrame {
 			HOST = ip;
 			try {
 				PORT = Integer.parseInt(serverport.getText());
-				CONNECTION.start(HOST, PORT, statBar);
+				CONNECTION.start(HOST, PORT, SAVETO, statBar);
 			} catch (Exception e) {
 				statBar.setText("Port needs to be a integer");
 			}

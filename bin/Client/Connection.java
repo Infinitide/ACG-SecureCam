@@ -1,4 +1,6 @@
+import javax.swing.JLabel;
 import java.net.Socket;
+import java.net.ConnectException;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -25,20 +27,20 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.UnrecoverableKeyException;
 import org.bouncycastle.asn1.ASN1TaggedObject;
+import org.bouncycastle.crypto.tls.TlsUtils;
 import org.bouncycastle.crypto.tls.Certificate;
 import org.bouncycastle.crypto.tls.TlsCredentials;
 import org.bouncycastle.crypto.tls.DefaultTlsClient;
 import org.bouncycastle.crypto.tls.TlsAuthentication;
 import org.bouncycastle.crypto.tls.TlsClientProtocol;
 import org.bouncycastle.crypto.tls.CertificateRequest;
+import org.bouncycastle.crypto.tls.SignatureAndHashAlgorithm;
+import org.bouncycastle.crypto.tls.TlsNoCloseNotifyException;
 import org.bouncycastle.crypto.tls.DefaultTlsSignerCredentials;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
-
 import org.bouncycastle.crypto.tls.TlsUtils;
 import org.bouncycastle.crypto.tls.SignatureAndHashAlgorithm;
-
 public class Connection {
 	private X509Certificate CACERT;
 	private Socket SOCKET;
@@ -71,12 +73,13 @@ public class Connection {
 			throw new UnrecoverableKeyException("Unable to obtain private key");
 		}
 	}
-	public void start(String host, int port, javax.swing.JLabel statBar){
+	
+	public void start(String host, int port, String output, JLabel statBar){
 		STATBAR = statBar;
-		start(host, port);
+		start(host, port, output);
 	}
 	
-	public void start(String host, int port){
+	public void start(String host, int port, String output){
 		Security.addProvider(new BouncyCastleProvider());
 		try{
 			SOCKET = new Socket(host, port);
@@ -93,7 +96,7 @@ public class Connection {
 								X509Certificate servCert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(serverCert.getCertificateList()[0].getEncoded()));
 								verifyCert(servCert);
 							} catch (Exception e){
-								System.out.println("Unable to verify server's certificate: " + e);
+								System.out.println("Unable to verify server's certificate");
 							}
 						};
 						
@@ -118,21 +121,27 @@ public class Connection {
 			 * and decrypted automatically
 			 */
 			 
-			ObjectInputStream in = new ObjectInputStream(cproto.getInputStream());
+			DataInputStream in = new DataInputStream(cproto.getInputStream());
+			cache(in);
+			System.out.println("File transfer complete");
 			
-			try {
-				cache((byte[]) in.readObject());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			if (STATBAR == null)
+				save(output);
+		} catch (TlsNoCloseNotifyException e) {
+			String err = "Server closed connection";
+			System.out.println(err);
+			if (STATBAR != null)
+				STATBAR.setText(err);
+			System.exit(1);
+		} catch (ConnectException e) {
+			String err = "Unable to connect to server";
+			System.out.println(err);
+			if (STATBAR != null)
+				STATBAR.setText(err);
+			System.exit(1);
 		} catch (Exception e){
 			e.printStackTrace();
 		}
-	}
-	
-	public void save(String output, javax.swing.JLabel statBar){
-		save(output);
-		statBar.setText("File saved to " + output);
 	}
 	
 	public void save(String fname) {
@@ -143,7 +152,7 @@ public class Connection {
 				while (true)
 					fos.write(in.readByte());
 			} catch (EOFException ee) {
-				System.out.println("File transfer complete");
+				System.out.println("File saved!");
 				in.close();
 			}
 			fos.flush();
@@ -161,13 +170,12 @@ public class Connection {
 			myMD5.update(bFile, 0, bFile.length);
 			byte[] md = myMD5.digest();
 			System.out.println("MD5 = " +  asHex(md) );
+			
+			if STATBAR != null
+				STATBAR.setText("File saved to " + output);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-	
-	public byte[] getCache(){
-		return CACHE.toByteArray();
 	}
 	
 	private void verifyCert(X509Certificate servCert) throws CertificateException{
@@ -184,7 +192,7 @@ public class Connection {
 				servCert.verify(CACERT.getPublicKey());
 				ca = true;
 			} catch (Exception e) {
-				throw new CertificateException("Server Cerficate not Trusted");
+				System.out.println("Server Certificate not Trusted");
 			}
 		}
 		
@@ -192,7 +200,7 @@ public class Connection {
 			servCert.checkValidity();
 			valid = true;
 		} catch (Exception e) {
-			throw new CertificateException("Server Certificate is expired");
+			System.out.println("Server Certificate is expired");
 		}
 		VALID = ca && valid;
 	}
@@ -209,14 +217,22 @@ public class Connection {
 		}
 	}
 	
-	private void cache(byte[] bytes){
+	private void cache(DataInputStream in){
 		try {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length);
-			baos.write(bytes, 0, bytes.length);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			byte[] buffer = new byte[1024];
+			int len;
+			while ((len = in.read(buffer)) > -1 )
+				baos.write(buffer, 0, len);
+			baos.flush();
 			CACHE = baos;
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("Unable to cache input");
 		}
+	}
+	
+	public byte[] getCache(){
+		return CACHE.toByteArray();
 	}
 	
 	/**

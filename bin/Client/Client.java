@@ -145,15 +145,10 @@ public class Client {
 		if (gui) {
 			initGui();
 		} else {
-			noGui();
+			CONNECTION.start(HOST, PORT, SAVETO);
 		}
 	}
-    
-	private static void noGui() {
-		CONNECTION.start(HOST, PORT);
-		CONNECTION.save(SAVETO);
-	}
-	
+  
 	private static void initGui() {
 		try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
@@ -174,7 +169,7 @@ public class Client {
 		
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new ClientGUI(CONNECTION, HOST, PORT, CACERT).setVisible(true);
+                new ClientGUI(CONNECTION, HOST, PORT, CACERT, SAVETO).setVisible(true);
             }
         });
 	}
