@@ -105,6 +105,8 @@ public class Server {
 		try {
 			new WebCam(keyStorePath, keyStorePassword, aliasName, aliasPassword, certPath).start(host, port, maxcon);
 		} catch (Exception e){
+			System.out.println("An error occured");
+			System.out.println("Contact your administrator");
 			e.printStackTrace();
 		}
 		
