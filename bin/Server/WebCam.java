@@ -51,10 +51,11 @@ public class WebCam{
 	protected void start(InetAddress host, int port, int maxcon) throws CertificateException {
 		try{
 			ServerSocket ssocket = new ServerSocket(port);
-			while (true){
+			while (true)
 				new ClientThread(ssocket.accept(), CERT, KEYPAIR, CACERT).start();
-			}
 		} catch (IOException e){
+			System.out.println("An error occurred");
+			System.out.println("Server shutting down....");
 			e.printStackTrace();
 		}
 	

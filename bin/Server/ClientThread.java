@@ -1,16 +1,18 @@
-import java.io.FileInputStream;
-import java.io.DataInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.EOFException;
-import java.io.FileNotFoundException;
+import java.net.URL;
+import java.net.Socket;
 import java.util.Date;
 import java.util.Vector;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.net.URL;
-import java.net.Socket;
+import java.io.FileInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.EOFException;
+import java.io.FileNotFoundException;
 import java.security.KeyPair;
 import java.security.Security;
 import java.security.SecureRandom;
@@ -32,19 +34,14 @@ import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.crypto.tls.DefaultTlsSignerCredentials;
 
-import java.nio.file.*;
-import java.security.MessageDigest;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ByteArrayInputStream;
-
-public class ClientThread extends Thread {
+public class ClientThread extends Thread implements Runnable{
 	
 	private Socket SOCKET;
 	private java.security.cert.Certificate SERVERCERT;
 	private KeyPair KEYPAIR;
 	private ByteArrayOutputStream CACHE;
 	private X509Certificate CACERT;
+	private boolean VALID;
 	
 	public ClientThread(Socket socket, java.security.cert.Certificate c, KeyPair kp, X509Certificate cacert) throws CertificateException, FileNotFoundException, IOException{
 		SOCKET = socket;
@@ -61,7 +58,8 @@ public class ClientThread extends Thread {
 			
 			// Start TLS handshake
 			TlsServerProtocol proto = new TlsServerProtocol(SOCKET.getInputStream(), SOCKET.getOutputStream(), new SecureRandom());
-			DefaultTlsServer server = new DefaultTlsServer() {
+			
+			proto.accept(new DefaultTlsServer() {
 				protected ProtocolVersion getMaximumVersion(){
 					return ProtocolVersion.TLSv12;
 				}
@@ -100,16 +98,19 @@ public class ClientThread extends Thread {
 						X509Certificate cliCert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(clientCert.getCertificateList()[0].getEncoded()));
 						verifyCert(cliCert);
 					} catch (CertificateException e) {
-						System.out.println("Unable to verify Client certificate:" + e);
+						System.out.println("Unable to verify Client certificate");
 					}
 				}
 				
-			};
+			});
 			
-			proto.accept(server);
+			if (!VALID){
+				close();
+				System.out.println("-------------- Done --------------");
+				return;
+			}
 			
 			// Begin data transfer
-			
 			URL myimage = new URL("http://183.76.13.58:80/SnapshotJPEG?Resolution=640x480");
 			DataInputStream in = null;
 			try{
@@ -119,22 +120,22 @@ public class ClientThread extends Thread {
 				SOCKET.close();
 				return;
 			}
-			cache(in);
-			in.close();
 			
-			ObjectOutputStream oos = new ObjectOutputStream(proto.getOutputStream());
-			//ObjectInputStream ois = new ObjectInputStream(proto.getInputStream());
+			DataOutputStream dos = new DataOutputStream(proto.getOutputStream());
 			
 			DateFormat dateFormat = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
 			Date date = new Date();
 			System.out.println("Sending image " + dateFormat.format(date) );
 		  
 			try{
-				oos.writeObject(CACHE.toByteArray());
+				while (true)
+					dos.writeByte(in.readByte());
 			} catch (EOFException ee) {
-				System.out.println("-------------- Done ----------");
+				in.close();
+				dos.flush();
+				dos.close();
+				System.out.println("-------------- Done --------------");
 			}
-			oos.flush();
 			SOCKET.close();
 			
 		} catch (Exception e) {
@@ -153,7 +154,10 @@ public class ClientThread extends Thread {
 		}
 	}
 	
-	private void verifyCert(X509Certificate clientCert) throws CertificateException{
+	private void verifyCert(X509Certificate clientCert) {
+		boolean ca = false;
+		boolean valid = false;
+		
 		if (CACERT == null) 
 			throw new IllegalArgumentException("CA Certificate Not Found");
 		if (clientCert == null) 
@@ -162,32 +166,19 @@ public class ClientThread extends Thread {
 		if (!CACERT.equals(clientCert)){
 			try{
 				clientCert.verify(CACERT.getPublicKey());
+				ca = true;
 			} catch (Exception e) {
-				throw new CertificateException("Client Certificate not Trusted");
+				System.out.println("Client Certificate not Trusted");
 			}
 		}
 		
 		try {
 			clientCert.checkValidity();
+			valid = true;
 		} catch (Exception e) {
-			throw new CertificateException("Client Certificate is expired");
+			System.out.println("Client Certificate is expired");
 		}
-	}
-	
-	private void cache(DataInputStream in){
-		try {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-			byte[] buffer = new byte[1024];
-			int len;
-			while ((len = in.read(buffer)) > -1 ) {
-				baos.write(buffer, 0, len);
-			}
-			baos.flush();
-			
-			CACHE = baos;
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		
+		VALID = ca && valid;
 	}
 }
