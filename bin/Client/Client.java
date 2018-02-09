@@ -148,7 +148,7 @@ public class Client {
 			CONNECTION.start(HOST, PORT, SAVETO);
 		}
 	}
-    
+  
 	private static void initGui() {
 		try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {

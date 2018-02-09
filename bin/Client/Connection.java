@@ -39,12 +39,13 @@ import org.bouncycastle.crypto.tls.TlsNoCloseNotifyException;
 import org.bouncycastle.crypto.tls.DefaultTlsSignerCredentials;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
+import org.bouncycastle.crypto.tls.TlsUtils;
+import org.bouncycastle.crypto.tls.SignatureAndHashAlgorithm;
 public class Connection {
 	private X509Certificate CACERT;
 	private Socket SOCKET;
 	private ByteArrayOutputStream CACHE;
-	private JLabel STATBAR = null;
+	private javax.swing.JLabel STATBAR;
 	private java.security.cert.Certificate CLIENTCERT;
 	private KeyPair KEYPAIR;
 	private boolean VALID = false;
