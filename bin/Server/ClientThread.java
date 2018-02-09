@@ -1,4 +1,3 @@
-
 import java.net.URL;
 import java.net.Socket;
 import java.util.Date;
@@ -59,7 +58,7 @@ public class ClientThread extends Thread implements Runnable{
 			
 			// Start TLS handshake
 			TlsServerProtocol proto = new TlsServerProtocol(SOCKET.getInputStream(), SOCKET.getOutputStream(), new SecureRandom());
-      
+			
 			proto.accept(new DefaultTlsServer() {
 				protected ProtocolVersion getMaximumVersion(){
 					return ProtocolVersion.TLSv12;
@@ -123,6 +122,7 @@ public class ClientThread extends Thread implements Runnable{
 			}
 			
 			DataOutputStream dos = new DataOutputStream(proto.getOutputStream());
+			
 			DateFormat dateFormat = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
 			Date date = new Date();
 			System.out.println("Sending image " + dateFormat.format(date) );

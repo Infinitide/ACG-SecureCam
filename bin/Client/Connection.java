@@ -39,13 +39,12 @@ import org.bouncycastle.crypto.tls.TlsNoCloseNotifyException;
 import org.bouncycastle.crypto.tls.DefaultTlsSignerCredentials;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.crypto.tls.TlsUtils;
-import org.bouncycastle.crypto.tls.SignatureAndHashAlgorithm;
+
 public class Connection {
 	private X509Certificate CACERT;
 	private Socket SOCKET;
 	private ByteArrayOutputStream CACHE;
-	private javax.swing.JLabel STATBAR;
+	private JLabel STATBAR = null;
 	private java.security.cert.Certificate CLIENTCERT;
 	private KeyPair KEYPAIR;
 	private boolean VALID = false;
@@ -172,7 +171,7 @@ public class Connection {
 			System.out.println("MD5 = " +  asHex(md) );
 			
 			if (STATBAR != null)
-				STATBAR.setText("File saved to " + output);
+				STATBAR.setText("File saved to " + fname);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
