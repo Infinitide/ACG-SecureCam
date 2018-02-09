@@ -170,7 +170,7 @@ public class Connection {
 			byte[] md = myMD5.digest();
 			System.out.println("MD5 = " +  asHex(md) );
 			
-			if STATBAR != null
+			if (STATBAR != null)
 				STATBAR.setText("File saved to " + output);
 		} catch (IOException e) {
 			e.printStackTrace();
