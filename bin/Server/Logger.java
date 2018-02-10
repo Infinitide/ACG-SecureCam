@@ -32,7 +32,8 @@ public class Logger{
 			System.out.println("[" + type + "]" + " - " + new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()) + ' ' + msg);
 			e.printStackTrace();
 		} else {
-			System.out.println("[" + type + "]" + " - " + new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()) + ' ' + msg + "\nException: " + e.getMessage());
+			System.out.println("[" + type + "]" + " - " + new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()) + ' ' + msg);
+			System.out.println("[" + type + "]" + " - " + new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()) + "Exception: " + e.getMessage());
 		}
 	}
 	

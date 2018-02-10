@@ -30,7 +30,7 @@ public class Server {
 	private X509Certificate CACERT;
 	private Certificate CERT;
 	private KeyPair KEYPAIR;
-	private Logger LOG;
+	private static Logger LOG;
 	
 	
 	public static void main (String[] args ) throws Exception { 
@@ -91,7 +91,7 @@ public class Server {
 				try {
 					port = Integer.parseInt(cmd.getOptionValue("p"));
 				} catch (NumberFormatException e) {
-					log.error("Int Expected for -p\n\nUsage: java Server <options>");
+					LOG.error("Int Expected for -p\n\nUsage: java Server <options>");
 					System.exit(0);
 				}
 			}
@@ -127,15 +127,15 @@ public class Server {
 			}
 			
         } catch (ParseException e) {
-			log.error(e.getMessage() + '\n' + "Usage: java Server <options>\nUse -h to display help");
+			LOG.error(e.getMessage() + '\n' + "Usage: java Server <options>\nUse -h to display help");
             System.exit(1);
         }
-		log.verbose("Server Startup Initiated");
+		LOG.verbose("Server Startup Initiated");
 		
 		try {
 			new Server(keyStorePath, keyStorePassword, aliasName, aliasPassword, certPath).start(host, port, maxcon);
 		} catch (Exception e){
-			log.error("An unexpected Error Occured\n", e);
+			LOG.error("An unexpected Error Occured\n", e);
 		}
 		
 	}
