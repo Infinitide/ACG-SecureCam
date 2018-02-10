@@ -50,6 +50,21 @@ public class Connection {
 	private boolean VALID = false;
 	private Logger LOG;
 	
+	/**
+	 * Initialise Connection
+	 * @param	ca							Path to CA certificate
+	 * @param	keyStorePath				Path of keystore where sever private key is located
+	 * @param	keyStorePassword			Password to keystore where server private key is located
+	 * @param	aliasName					Alias of server private key
+	 * @param	aliasPassword				Password of the alias of server private key
+	 * @param	log							Logger used for formating output
+	 * @throws	UnrecoverableKeyException	When key cannot be retrieved
+	 * @throws	FileNotFoundException		When file cannot be found
+	 * @throws	KeyStoreException			When something is wrong with the keystore
+	 * @param	IOException					When file cant be read
+	 * @param	BoSuchAlgorithnException	When algorithm is not found
+	 * @param	CertificateException		When something is wrong with the certificate
+	 */
 	public Connection(String ca, String keyStorePath, String keyStorePassword, String aliasName, String aliasPassword, Logger log) throws UnrecoverableKeyException, FileNotFoundException, KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException{
 		LOG = log;
 		
@@ -76,11 +91,23 @@ public class Connection {
 		}
 	}
 	
-	public void start(String host, int port, String output, JLabel statBar){
+	/**
+	 * Start Connection
+	 * @param	host	Server IP address
+	 * @param	port	Server Port
+	 * @param	statBar	Status Bar to display status message for GUI
+	 */
+	public void start(String host, int port, JLabel statBar){
 		STATBAR = statBar;
-		start(host, port, output);
+		start(host, port, (String) null);
 	}
 	
+	/**
+	 * Start Connection
+	 * @param	host	Server IP address
+	 * @param	port	Server Port
+	 * @param	output	File to save image to
+	 */
 	public void start(String host, int port, String output){
 		LOG.info("Connecting to server at " + host + ':' + port);
 		LOG.verbose("Initiating TLS Handshake with server");
@@ -123,16 +150,18 @@ public class Connection {
 				close(1);
 			
 			LOG.verbose("TLS Handshake successful");
-			LOG.verbose("Retrieving image from Server");
-			/* Get TLS connection socket stream
-			 * Traffic using this stream will be encrypted
-			 * and decrypted automatically
+			LOG.info("Retrieving image from Server");
+			
+			/*
+			 * Get TLS connection socket stream
+			 * Traffic using this stream will be encrypted and decrypted automatically
 			 */
 			DataInputStream in = new DataInputStream(cproto.getInputStream());
 			cache(in);
-			LOG.verbose("Image received");
 			
-			if (STATBAR == null)
+			// Save image if output is not null
+			// Output will be null if GUI is initialised
+			if (output != null)
 				save(output);
 		} catch (SocketException e) {
 			String err = "Failed to connect to server";
@@ -151,6 +180,10 @@ public class Connection {
 		}
 	}
 	
+	/**
+	 * Save image from cache to file
+	 * @param	fname	File name to save image to
+	 */
 	public void save(String fname) {
 		if (CACHE == null)
 			return;
@@ -189,6 +222,11 @@ public class Connection {
 		}
 	}
 	
+	/**
+	 * Verifies Server Certificate
+	 * @param  	servCert				Server Certificate to verify
+	 * @throws	CertificateException	When something is wrong with the certificate
+	 */
 	private void verifyCert(X509Certificate servCert) throws CertificateException{
 		boolean ca = false;
 		boolean valid = false;
@@ -215,6 +253,10 @@ public class Connection {
 		VALID = ca && valid;
 	}
 	
+	/**
+	 * Close connection with server
+	 * @param	exitCd	exitCd
+	 */
 	private void close(int exitCd){
 		if (exitCd == 1)
 			LOG.info("Server identity not verified");
@@ -223,6 +265,8 @@ public class Connection {
 				CACHE.flush();
 			SOCKET.close();
 			LOG.verbose("Connection with server closed");
+			
+			// Stops program if exitCd is not 0
 			if (exitCd != 0)
 				System.exit(exitCd);
 		} catch (IOException e){
@@ -231,6 +275,10 @@ public class Connection {
 		}
 	}
 	
+	/**
+	 * Cache image recieved from client
+	 * @param	in	DataInputStream containing the image from the server
+	 */
 	private void cache(DataInputStream in){
 		LOG.verbose("Caching Image");
 		try {
@@ -246,6 +294,10 @@ public class Connection {
 		}
 	}
 	
+	/**
+	 * Retrieves cache
+	 * @return cache in byte array
+	 */
 	public byte[] getCache(){
 		return CACHE.toByteArray();
 	}

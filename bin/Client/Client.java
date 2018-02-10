@@ -1,13 +1,3 @@
-/**
- * Client.java
- *  
- * @author Anurag Jain & Calvin Siak
- * 
- * A simple FTP client using Java Socket.
- * 
- * Read more at http://mrbool.com/file-transfer-between-2-computers-with-java/24516#ixzz3ZB8c5M00  
- */
-
 import java.security.*;
 import java.net.*; 
 import java.io.*;
@@ -22,10 +12,10 @@ public class Client {
 	private static int PORT = 15123;
 	private static String SAVETO = "image.jpg";
 	private static Connection CONNECTION;
+	private static Logger LOG;
 	
 	public static void main(String [] args) throws IOException {
 		Options options = new Options();
-		
 		
 		Option sport = new Option("p", "port", true, "Port which server listens on");
 		sport.setRequired(false);
@@ -80,11 +70,10 @@ public class Client {
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
 		
-		Logger log = null;
 		try {
             cmd = parser.parse(options, args);
 			gui = cmd.hasOption("g");
-			log = new Logger(cmd.hasOption("v"));
+			LOG = new Logger(cmd.hasOption("v"));
 			
 			if (cmd.hasOption("h")){
 				System.out.println("SecureCam Network Client\n");
@@ -143,19 +132,25 @@ public class Client {
 
             System.exit(1);
 		}
+		
+		// Initialise Connection
 		try {
-			CONNECTION = new Connection(CACERT, keyStorePath, keyStorePassword, aliasName, aliasPassword, log);
+		
+			CONNECTION = new Connection(CACERT, keyStorePath, keyStorePassword, aliasName, aliasPassword, LOG);
 		} catch (Exception e){
-			e.printStackTrace();
+			LOG.error("Unable to Initialise Connection", e);
 		}
 		if (gui) {
-			initGui(log);
+			initGui();
 		} else {
 			CONNECTION.start(HOST, PORT, SAVETO);
 		}
 	}
     
-	private static void initGui(Logger log) {
+	/**
+	 * Initialise GUI
+	 */
+	private static void initGui() {
 		try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -175,7 +170,7 @@ public class Client {
 		
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new ClientGUI(CONNECTION, HOST, PORT, CACERT, SAVETO, log).setVisible(true);
+                new ClientGUI(CONNECTION, HOST, PORT, CACERT, LOG).setVisible(true);
             }
         });
 	}
