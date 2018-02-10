@@ -1,9 +1,7 @@
 import java.net.URL;
 import java.net.Socket;
-import java.util.Date;
+import java.net.SocketException;
 import java.util.Vector;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.io.FileInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -42,19 +40,23 @@ public class ClientThread extends Thread implements Runnable{
 	private ByteArrayOutputStream CACHE;
 	private X509Certificate CACERT;
 	private boolean VALID;
+	private Logger LOG;
+	private String REMOTE;
 	
-	public ClientThread(Socket socket, java.security.cert.Certificate c, KeyPair kp, X509Certificate cacert) throws CertificateException, FileNotFoundException, IOException{
+	public ClientThread(Socket socket, java.security.cert.Certificate c, KeyPair kp, X509Certificate cacert, Logger log) throws CertificateException, FileNotFoundException, IOException{
 		SOCKET = socket;
 		SERVERCERT = c;
 		KEYPAIR = kp;
 		CACERT = cacert;
+		LOG = log;
+		REMOTE = SOCKET.getRemoteSocketAddress().toString();
+		LOG.verbose("Initialising connection with " + REMOTE);
 	}
 	
 	public void run(){
 		Security.addProvider(new BouncyCastleProvider());
 		try{
 			Certificate cert = Certificate.getInstance(ASN1TaggedObject.fromByteArray(SERVERCERT.getEncoded()));
-			System.out.println("Initialising connection : " + SOCKET.getRemoteSocketAddress().toString() + " <-> /127.0.0.1:15123" );
 			
 			// Start TLS handshake
 			TlsServerProtocol proto = new TlsServerProtocol(SOCKET.getInputStream(), SOCKET.getOutputStream(), new SecureRandom());
@@ -88,7 +90,7 @@ public class ClientThread extends Thread implements Runnable{
 							certs
 						);
 					} catch (Exception e) {
-						e.printStackTrace();
+						LOG.error(REMOTE, e);
 						return null;
 					}
 				}
@@ -98,7 +100,7 @@ public class ClientThread extends Thread implements Runnable{
 						X509Certificate cliCert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(clientCert.getCertificateList()[0].getEncoded()));
 						verifyCert(cliCert);
 					} catch (CertificateException e) {
-						System.out.println("Unable to verify Client certificate");
+						LOG.warn("Unable to verify Client certificate for " + REMOTE);
 					}
 				}
 				
@@ -106,9 +108,10 @@ public class ClientThread extends Thread implements Runnable{
 			
 			if (!VALID){
 				close();
-				System.out.println("-------------- Done --------------");
 				return;
 			}
+			LOG.verbose("Connection established with " + REMOTE);
+			LOG.verbose("Retrieving Image");
 			
 			// Begin data transfer
 			URL myimage = new URL("http://183.76.13.58:80/SnapshotJPEG?Resolution=640x480");
@@ -116,17 +119,14 @@ public class ClientThread extends Thread implements Runnable{
 			try{
 				in = new DataInputStream(myimage.openStream());
 			} catch (Exception ee) {
-				System.out.println("Check internet connection please");
+				LOG.error("Unable to retrieve image");
+				LOG.error("Check Internet Connection");
 				SOCKET.close();
 				return;
 			}
 			
 			DataOutputStream dos = new DataOutputStream(proto.getOutputStream());
-			
-			DateFormat dateFormat = new SimpleDateFormat("yy/MM/dd HH:mm:ss");
-			Date date = new Date();
-			System.out.println("Sending image " + dateFormat.format(date) );
-		  
+			LOG.verbose("Sending image to " + REMOTE);
 			try{
 				while (true)
 					dos.writeByte(in.readByte());
@@ -134,12 +134,15 @@ public class ClientThread extends Thread implements Runnable{
 				in.close();
 				dos.flush();
 				dos.close();
-				System.out.println("-------------- Done --------------");
+				LOG.verbose("Image send to " + REMOTE + " successful");
 			}
-			SOCKET.close();
+			close();
 			
+		} catch (SocketException e){
+			LOG.verbose("Client Closed Connection");
+			close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOG.error("Unexpected Exception", e);
 		}
 	}
 	
@@ -148,8 +151,8 @@ public class ClientThread extends Thread implements Runnable{
 			if (CACHE != null)
 				CACHE.flush();
 			SOCKET.close();
+			LOG.verbose("Connection with " + REMOTE + " closed");
 		} catch (IOException e){
-			e.printStackTrace();
 			System.exit(1);
 		}
 	}
@@ -158,17 +161,15 @@ public class ClientThread extends Thread implements Runnable{
 		boolean ca = false;
 		boolean valid = false;
 		
-		if (CACERT == null) 
-			throw new IllegalArgumentException("CA Certificate Not Found");
 		if (clientCert == null) 
-			throw new IllegalArgumentException("Client Certificate Not Found");
+			LOG.warn("Client Certificate Not Found for connection : " + REMOTE);
 		
 		if (!CACERT.equals(clientCert)){
 			try{
 				clientCert.verify(CACERT.getPublicKey());
 				ca = true;
 			} catch (Exception e) {
-				System.out.println("Client Certificate not Trusted");
+				LOG.warn(REMOTE + " Client Certificate not Trusted");
 			}
 		}
 		
@@ -176,7 +177,7 @@ public class ClientThread extends Thread implements Runnable{
 			clientCert.checkValidity();
 			valid = true;
 		} catch (Exception e) {
-			System.out.println("Client Certificate is expired");
+			LOG.warn(REMOTE + " Client Certificate is expired");
 		}
 		
 		VALID = ca && valid;
