@@ -42,6 +42,10 @@ public class Server {
 		aliasPass.setRequired(false);
 		options.addOption(aliasPass);
 		
+		Option verb = new Option("v", "verbose", false, "Verbose Output");
+		verb.setRequired(false);
+		options.addOption(verb);
+		
 		Option help = new Option("h", "help", false, "Prints help message");
 		help.setRequired(false);
 		options.addOption(help);
@@ -50,16 +54,15 @@ public class Server {
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
 		
+		Logger log = null;
 		try {
             cmd = parser.parse(options, args);
-			
+			log = new Logger(cmd.hasOption("v"));
 			if (cmd.hasOption("p")) {
 				try {
 					port = Integer.parseInt(cmd.getOptionValue("p"));
 				} catch (NumberFormatException e) {
-					System.out.println("Int Expected for -p\n");
-					System.out.println("Usage: java Server <options>");
-					System.out.println("Use -h to display help");
+					log.error("Int Expected for -p\n\nUsage: java Server <options>");
 					System.exit(0);
 				}
 			}
@@ -95,19 +98,15 @@ public class Server {
 			}
 			
         } catch (ParseException e) {
-            System.out.println(e.getMessage() + '\n');
-			System.out.println("Usage: java Server <options>");
-			System.out.println("Use -h to display help");
-
+			log.error(e.getMessage() + '\n' + "Usage: java Server <options>\nUse -h to display help");
             System.exit(1);
         }
+		log.verbose("Server Startup Initiated");
 		
 		try {
-			new WebCam(keyStorePath, keyStorePassword, aliasName, aliasPassword, certPath).start(host, port, maxcon);
+			new WebCam(keyStorePath, keyStorePassword, aliasName, aliasPassword, certPath, log).start(host, port, maxcon);
 		} catch (Exception e){
-			System.out.println("An error occured");
-			System.out.println("Contact your administrator");
-			e.printStackTrace();
+			log.error("An unexpected Error Occured\n", e);
 		}
 		
 	}

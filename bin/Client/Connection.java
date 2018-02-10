@@ -1,6 +1,6 @@
 import javax.swing.JLabel;
 import java.net.Socket;
-import java.net.ConnectException;
+import java.net.SocketException;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -48,8 +48,11 @@ public class Connection {
 	private java.security.cert.Certificate CLIENTCERT;
 	private KeyPair KEYPAIR;
 	private boolean VALID = false;
+	private Logger LOG;
 	
-	public Connection(String ca, String keyStorePath, String keyStorePassword, String aliasName, String aliasPassword) throws UnrecoverableKeyException, FileNotFoundException, KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException{
+	public Connection(String ca, String keyStorePath, String keyStorePassword, String aliasName, String aliasPassword, Logger log) throws UnrecoverableKeyException, FileNotFoundException, KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException{
+		LOG = log;
+		
 		// Load CA Cert
 		CertificateFactory cf = CertificateFactory.getInstance("X.509");
 		FileInputStream readCa = new FileInputStream(ca);
@@ -79,6 +82,8 @@ public class Connection {
 	}
 	
 	public void start(String host, int port, String output){
+		LOG.info("Connecting to server at " + host + ':' + port);
+		LOG.verbose("Initiating TLS Handshake with server");
 		Security.addProvider(new BouncyCastleProvider());
 		try{
 			SOCKET = new Socket(host, port);
@@ -95,7 +100,7 @@ public class Connection {
 								X509Certificate servCert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(serverCert.getCertificateList()[0].getEncoded()));
 								verifyCert(servCert);
 							} catch (Exception e){
-								System.out.println("Unable to verify server's certificate");
+								LOG.error("Unable to verify server's certificate");
 							}
 						};
 						
@@ -113,45 +118,51 @@ public class Connection {
 				}
 			});
 			
+			// Closes connection if certificate is invalid
 			if (!VALID)
 				close(1);
+			
+			LOG.verbose("TLS Handshake successful");
+			LOG.verbose("Retrieving image from Server");
 			/* Get TLS connection socket stream
 			 * Traffic using this stream will be encrypted
 			 * and decrypted automatically
 			 */
-			 
 			DataInputStream in = new DataInputStream(cproto.getInputStream());
 			cache(in);
-			System.out.println("File transfer complete");
+			LOG.verbose("Image received");
 			
 			if (STATBAR == null)
 				save(output);
-		} catch (TlsNoCloseNotifyException e) {
-			String err = "Server closed connection";
-			System.out.println(err);
+		} catch (SocketException e) {
+			String err = "Failed to connect to server";
+			LOG.error(err);
 			if (STATBAR != null)
 				STATBAR.setText(err);
-			System.exit(1);
-		} catch (ConnectException e) {
-			String err = "Unable to connect to server";
-			System.out.println(err);
+		} catch (TlsNoCloseNotifyException e) {
+			String err = "Server closed connection";
+			LOG.error(err);
 			if (STATBAR != null)
 				STATBAR.setText(err);
 			System.exit(1);
 		} catch (Exception e){
-			e.printStackTrace();
+			LOG.error("An error occurred");
+			LOG.info("Contact your administrator");
 		}
 	}
 	
 	public void save(String fname) {
+		if (CACHE == null)
+			return;
 		try{
+			LOG.verbose("Saving Image to File");
 			FileOutputStream fos = new FileOutputStream(fname);
 			DataInputStream in = new DataInputStream(new ByteArrayInputStream(CACHE.toByteArray()));
 			try {
 				while (true)
 					fos.write(in.readByte());
 			} catch (EOFException ee) {
-				System.out.println("File saved!");
+				LOG.verbose("Image Saved to file with " + fname);
 				in.close();
 			}
 			fos.flush();
@@ -163,15 +174,15 @@ public class Connection {
 			try{
 				myMD5 = MessageDigest.getInstance("MD5");
 			} catch (Exception ee){
-				
+				LOG.error("An Unexpected error occurred");
 			}
+			LOG.verbose("Computing MD5 Checksum");
 			byte[] bFile = Files.readAllBytes(Paths.get(fname));
 			myMD5.update(bFile, 0, bFile.length);
 			byte[] md = myMD5.digest();
-			System.out.println("MD5 = " +  asHex(md) );
-			
+			LOG.info("MD5 checksum : " +  asHex(md));
 			if (STATBAR != null)
-				STATBAR.setText("File saved to " + fname);
+				STATBAR.setText("File saved to " + fname + '(' + asHex(md) + ')');
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -180,9 +191,8 @@ public class Connection {
 	private void verifyCert(X509Certificate servCert) throws CertificateException{
 		boolean ca = false;
 		boolean valid = false;
+		LOG.verbose("Verifying Server Certificate");
 		
-		if (CACERT == null) 
-			throw new IllegalArgumentException("CA Certificate Not Found");
 		if (servCert == null)
 			throw new IllegalArgumentException("Server Certificate Not Found");
 		
@@ -191,7 +201,7 @@ public class Connection {
 				servCert.verify(CACERT.getPublicKey());
 				ca = true;
 			} catch (Exception e) {
-				System.out.println("Server Certificate not Trusted");
+				LOG.error("Server Certificate not Trusted");
 			}
 		}
 		
@@ -199,24 +209,29 @@ public class Connection {
 			servCert.checkValidity();
 			valid = true;
 		} catch (Exception e) {
-			System.out.println("Server Certificate is expired");
+			LOG.error("Server Certificate is expired");
 		}
 		VALID = ca && valid;
 	}
 	
 	private void close(int exitCd){
+		if (exitCd == 1)
+			LOG.info("Server identity not verified");
 		try {
 			if (CACHE != null)
 				CACHE.flush();
 			SOCKET.close();
+			LOG.verbose("Connection with server closed");
 			if (exitCd != 0)
 				System.exit(exitCd);
 		} catch (IOException e){
+			LOG.error("Unexpected Exception ", e);
 			e.printStackTrace();
 		}
 	}
 	
 	private void cache(DataInputStream in){
+		LOG.verbose("Caching Image");
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			byte[] buffer = new byte[1024];
@@ -226,7 +241,7 @@ public class Connection {
 			baos.flush();
 			CACHE = baos;
 		} catch (Exception e) {
-			System.out.println("Unable to cache input");
+			LOG.error("Unable to cache input", e);
 		}
 	}
 	
@@ -248,6 +263,7 @@ public class Connection {
 				strbuf.append("0");
 			strbuf.append(Long.toString((int) buf[i] & 0xff, 16));
 		}
+		
 		// Return result string in Hexadecimal format
 		return strbuf.toString();
 	}

@@ -72,13 +72,19 @@ public class Client {
 		aliasPass.setRequired(false);
 		options.addOption(aliasPass);
 		
+		Option verb = new Option("v", "verbose", false, "Verbose Output");
+		verb.setRequired(false);
+		options.addOption(verb);
+		
 		CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
 		
+		Logger log = null;
 		try {
             cmd = parser.parse(options, args);
 			gui = cmd.hasOption("g");
+			log = new Logger(cmd.hasOption("v"));
 			
 			if (cmd.hasOption("h")){
 				System.out.println("SecureCam Network Client\n");
@@ -138,18 +144,18 @@ public class Client {
             System.exit(1);
 		}
 		try {
-			CONNECTION = new Connection(CACERT, keyStorePath, keyStorePassword, aliasName, aliasPassword);
+			CONNECTION = new Connection(CACERT, keyStorePath, keyStorePassword, aliasName, aliasPassword, log);
 		} catch (Exception e){
 			e.printStackTrace();
 		}
 		if (gui) {
-			initGui();
+			initGui(log);
 		} else {
 			CONNECTION.start(HOST, PORT, SAVETO);
 		}
 	}
     
-	private static void initGui() {
+	private static void initGui(Logger log) {
 		try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -169,7 +175,7 @@ public class Client {
 		
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new ClientGUI(CONNECTION, HOST, PORT, CACERT, SAVETO).setVisible(true);
+                new ClientGUI(CONNECTION, HOST, PORT, CACERT, SAVETO, log).setVisible(true);
             }
         });
 	}

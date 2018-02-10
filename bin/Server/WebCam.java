@@ -23,8 +23,12 @@ public class WebCam{
 	private X509Certificate CACERT;
 	private Certificate CERT;
 	private KeyPair KEYPAIR;
+	private Logger LOG;
 	
-	protected WebCam(String keyStorePath, String keyStorePassword, String aliasName, String aliasPassword, String ca) throws UnrecoverableKeyException, FileNotFoundException, KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException{
+	protected WebCam(String keyStorePath, String keyStorePassword, String aliasName, String aliasPassword, String ca, Logger logger) throws UnrecoverableKeyException, FileNotFoundException, KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException{
+		// Initialise Logger
+		LOG = logger;
+		
 		// Load CA Cert
 		CertificateFactory cf = CertificateFactory.getInstance("X.509");
 		FileInputStream readCa = new FileInputStream(ca);
@@ -51,12 +55,17 @@ public class WebCam{
 	protected void start(InetAddress host, int port, int maxcon) throws CertificateException {
 		try{
 			ServerSocket ssocket = new ServerSocket(port);
+			LOG.info("Server Startup successful");
+			LOG.info("Waiting for client connection on " + host + ":" + port);
+			if (CACERT == null) {
+				LOG.error("CA Certificate Not Found");
+				System.exit(1);
+			}
 			while (true)
-				new ClientThread(ssocket.accept(), CERT, KEYPAIR, CACERT).start();
+				new ClientThread(ssocket.accept(), CERT, KEYPAIR, CACERT, LOG).start();
 		} catch (IOException e){
-			System.out.println("An error occurred");
-			System.out.println("Server shutting down....");
-			e.printStackTrace();
+			LOG.error("An error occurred");
+			LOG.info("Server shutting down....");
 		}
 	
 	}

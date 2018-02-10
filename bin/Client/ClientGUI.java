@@ -9,8 +9,11 @@ public class ClientGUI extends javax.swing.JFrame {
 	private int PORT;
 	private String CACERT;
 	private String SAVETO;
+	private Logger LOG;
 	
-    public ClientGUI(Connection conn, String host, int port, String ca, String saveto){
+    public ClientGUI(Connection conn, String host, int port, String ca, String saveto, Logger log){
+		LOG = log;
+		LOG.verbose("Initialising Graphic Interface");
 		HOST = host;
 		PORT = port;
 		CACERT = ca;
@@ -166,7 +169,7 @@ public class ClientGUI extends javax.swing.JFrame {
         pack();
     }// </editor-fold>
 
-    private void saveImgMouseClicked(java.awt.event.MouseEvent evt) {                                      
+    private void saveImgMouseClicked(java.awt.event.MouseEvent evt) {
 		JFileChooser chooser = new JFileChooser();
 		FileNameExtensionFilter filter = new FileNameExtensionFilter("jpg", "JPG");
 		chooser.setApproveButtonText("Save");
