@@ -43,15 +43,29 @@ public class ClientThread extends Thread implements Runnable{
 	private Logger LOG;
 	private String REMOTE;
 	
-	public ClientThread(Socket socket, java.security.cert.Certificate c, KeyPair kp, X509Certificate cacert, Logger log) throws CertificateException, FileNotFoundException, IOException{
+	/**
+	 * @param	socket					Socket to connect with client
+	 * @param	javaCert				Server Certificate
+	 * @param	keyPair					Server Public Private keypair
+	 * @param	cacert					Certificate Authority Certificate
+	 * @param	log						Logger to print information to screen
+	 * @throws	CertificateException	When something is wrong with the certificate
+	 * @throws	FileNotFoundException	When file cannot be found
+	 * @param	IOException				When file cant be read
+	 */
+	public ClientThread(Socket socket, java.security.cert.Certificate javaCert, KeyPair keyPair, X509Certificate cacert, Logger log) throws CertificateException, FileNotFoundException, IOException{
 		SOCKET = socket;
-		SERVERCERT = c;
-		KEYPAIR = kp;
+		SERVERCERT = javaCert;
+		KEYPAIR = keyPair;
 		CACERT = cacert;
 		LOG = log;
 		REMOTE = SOCKET.getRemoteSocketAddress().toString();
 		LOG.verbose("Initialising connection with " + REMOTE);
 	}
+	
+	/**
+	 * Starts running thread to handle client connection
+	 */
 	
 	public void run(){
 		Security.addProvider(new BouncyCastleProvider());
@@ -60,12 +74,14 @@ public class ClientThread extends Thread implements Runnable{
 			
 			// Start TLS handshake
 			TlsServerProtocol proto = new TlsServerProtocol(SOCKET.getInputStream(), SOCKET.getOutputStream(), new SecureRandom());
-			
 			proto.accept(new DefaultTlsServer() {
+				
+				// Set maximum protocol version version
 				protected ProtocolVersion getMaximumVersion(){
 					return ProtocolVersion.TLSv12;
 				}
 				
+				// Get TLS Signer Credentials to use for TLS Connection
 				protected TlsSignerCredentials getRSASignerCredentials() throws IOException {
 					SignatureAndHashAlgorithm signatureAndHashAlgorithm = (SignatureAndHashAlgorithm) TlsUtils.getDefaultRSASignatureAlgorithms().get(0);
 					return new DefaultTlsSignerCredentials(
@@ -76,6 +92,7 @@ public class ClientThread extends Thread implements Runnable{
 					);
 				}
 				
+				// Generate Certificate Request for Client Certificate
 				public CertificateRequest getCertificateRequest() {
 					try {
 						Vector<Object> certs = new Vector<Object>();
@@ -95,6 +112,7 @@ public class ClientThread extends Thread implements Runnable{
 					}
 				}
 				
+				// Validates and verify client certificate
 				public void notifyClientCertificate(org.bouncycastle.crypto.tls.Certificate clientCert) throws IOException{
 					try {
 						X509Certificate cliCert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(clientCert.getCertificateList()[0].getEncoded()));
@@ -106,6 +124,7 @@ public class ClientThread extends Thread implements Runnable{
 				
 			});
 			
+			// Closes connections and kills thread
 			if (!VALID){
 				close();
 				return;
@@ -113,7 +132,10 @@ public class ClientThread extends Thread implements Runnable{
 			LOG.verbose("Connection established with " + REMOTE);
 			LOG.verbose("Retrieving Image");
 			
-			// Begin data transfer
+			LOG.verbose("Connection established with " + REMOTE);
+			LOG.verbose("Retrieving Image");
+			
+			// Retrieve Image
 			URL myimage = new URL("http://183.76.13.58:80/SnapshotJPEG?Resolution=640x480");
 			DataInputStream in = null;
 			try{
@@ -125,8 +147,14 @@ public class ClientThread extends Thread implements Runnable{
 				return;
 			}
 			
+			/*
+			 * Get TLS connection socket stream
+			 * Traffic using this stream will be encrypted and decrypted automatically
+			 */
 			DataOutputStream dos = new DataOutputStream(proto.getOutputStream());
 			LOG.verbose("Sending image to " + REMOTE);
+
+			// Send image to client
 			try{
 				while (true)
 					dos.writeByte(in.readByte());
@@ -136,8 +164,9 @@ public class ClientThread extends Thread implements Runnable{
 				dos.close();
 				LOG.verbose("Image send to " + REMOTE + " successful");
 			}
-			close();
 			
+			//Closes Connection
+			close();
 		} catch (SocketException e){
 			LOG.verbose("Client Closed Connection");
 			close();
@@ -146,6 +175,9 @@ public class ClientThread extends Thread implements Runnable{
 		}
 	}
 	
+	/**
+	 * Closes connection with client
+	 */
 	private void close(){
 		try {
 			if (CACHE != null)
@@ -153,10 +185,14 @@ public class ClientThread extends Thread implements Runnable{
 			SOCKET.close();
 			LOG.verbose("Connection with " + REMOTE + " closed");
 		} catch (IOException e){
-			System.exit(1);
+			LOG.error("An unexpected exception occurred : ", e);
 		}
 	}
 	
+	/**
+	 * Verifies if client certificate is valid
+	 * @param	clientCert	Certificate presented by Client
+	 */
 	private void verifyCert(X509Certificate clientCert) {
 		boolean ca = false;
 		boolean valid = false;

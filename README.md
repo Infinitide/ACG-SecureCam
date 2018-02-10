@@ -6,18 +6,18 @@ Server and Client program to be used to retrieve information from WebCam
 - Apache Commons CLI
 - Bouncy Castle
 
-## Building the Project
+## Compiling the program from source
 
 ### Server
 In the server directory run the following command
 ```
-javac -cp lib/*;. Server.java
+javac -cp ../lib/*;. Server.java
 ```
 
 ### Client
 In the Client directory run the following command
 ```
-javac -cp lib/*;. Client.java
+javac -cp ../lib/*;. Client.java
 ```
 
 ## Prerequisites
@@ -31,36 +31,45 @@ Ensure that the Certificate Authority's cert is in the Client Directory
 
 ## Using the Program
 
+### Sserver
+In the client directory run the following command
+```
+java -cp ../lib/*;. Sserver
+```
+
+#### CLI Options
+
+```
+usage: java Server <options>
+ -a,--alias <arg>                Alias for cert in keystore
+ -ap,--alias-password <arg>      Alias Password for alias
+ -c,--certificate <arg>          Certificate
+ -h,--help                       Prints help message
+ -kp,--keystore-password <arg>   Key Store Password
+ -ks,--keystore <arg>            Key Store Path
+ -l,--listen <arg>               Address which server listens on
+ -p,--port <arg>                 Port which server listens on
+ -v,--verbose                    Verbose Output
+```
+
 ### Client
 In the client directory run the following command
 ```
-java -cp lib/*;. Client
-```
-
-#### CLI Options
-
-```
--c,--certificate <arg>   Certificate
--g,--gui                 Starts Client GUI
--h,--help                Prints help message
--o,--output <arg>        File to save image to
--p,--port <arg>          Port which server listens on
--s,--server <arg>        Address which server listens on
-```
-
-### Server
-In the client directory run the following command
-```
-java -cp lib/*;. Client
+java -cp ../lib/*;. Client
 ```
 
 #### CLI Options
 ```
--a,--alias <arg>                Alias for cert in keystore
--ap,--alias-password <arg>      Alias Password for alias
--h,--help                       Prints help message
--kp,--keystore-password <arg>   Key Store Password
--ks,--keystore <arg>            Key Store Path
--l,--listen <arg>               Address which server listens on
--p,--port <arg>                 Port which server listens on
+usage: java -cp lib/*;. Client <options>
+ -a,--alias <arg>                Alias for cert in keystore
+ -ap,--alias-password <arg>      Alias Password for alias
+ -c,--certificate <arg>          Certificate
+ -g,--gui                        Starts Client GUI
+ -h,--help                       Prints help message
+ -kp,--keystore-password <arg>   Key Store Password
+ -ks,--keystore <arg>            Key Store Path
+ -o,--output <arg>               File to save image to
+ -p,--port <arg>                 Port which server listens on
+ -s,--server <arg>               Address which server listens on
+ -v,--verbose                    Verbose Output
 ```
