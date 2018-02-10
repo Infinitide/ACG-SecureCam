@@ -216,7 +216,6 @@ public class Connection {
 			LOG.info("MD5 checksum : " +  asHex(md));
 			if (STATBAR != null)
 				STATBAR.setText("File saved to " + fname + '(' + asHex(md) + ')');
-			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
