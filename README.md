@@ -7,15 +7,16 @@ Server and Client program to be used to retrieve information from WebCam
 - Bouncy Castle
 
 ## Compiling the program from source
+Source file can be found at [src](src)
 
 ### Server
-In the server directory run the following command
+In the [server src directory](src/Server) run the following command
 ```
 javac -cp ../lib/*;. Server.java
 ```
 
 ### Client
-In the Client directory run the following command
+In the [Client src directory](src/Client) run the following command
 ```
 javac -cp ../lib/*;. Client.java
 ```
@@ -23,24 +24,26 @@ javac -cp ../lib/*;. Client.java
 ## Prerequisites
 
 ### Server
-Ensure that a keystore with the server's private certificate in the server's directory
-Ensure keystore is in PKCS#12 format
+Ensure that the Certificate Authority's cert is in the Server's Directory [ca.crt](dist/Server/ca.crt)
+Ensure that a keystore (in PKCS#12 format) with the Server's private certificate in the Server's directory [dist/Server/securecam.server.pkcs12](dist/Server/securecam.server.pkcs12)
 
 ### Client
-Ensure that the Certificate Authority's cert is in the Client Directory
+Ensure that the Certificate Authority's cert is in the Client Directory [ca.crt](dist/Client/ca.crt)
+Ensure that a keystore (in PKCS#12 format) with the Client's private certificate in the Client's directory [dist/Client/securecam.client.pkcs12](dist/Client/securecam.client.pkcs12)
 
 ## Using the Program
+Compiled program with its relevant files can be found in [dist](dist)
 
-### Sserver
-In the client directory run the following command
+### Server
+Run the following command in the directory which contains the compiled server program
 ```
-java -cp ../lib/*;. Sserver
+java -jar Server.jar
 ```
 
 #### CLI Options
 
 ```
-usage: java Server <options>
+usage: java -jar Server.jar <options>
  -a,--alias <arg>                Alias for cert in keystore
  -ap,--alias-password <arg>      Alias Password for alias
  -c,--certificate <arg>          Certificate
@@ -53,14 +56,14 @@ usage: java Server <options>
 ```
 
 ### Client
-In the client directory run the following command
+Run the following command in the directory which contains the compiled server program
 ```
-java -cp ../lib/*;. Client
+java -jar Client.jar
 ```
 
 #### CLI Options
 ```
-usage: java -cp lib/*;. Client <options>
+usage: java -jar Client.jar <options>
  -a,--alias <arg>                Alias for cert in keystore
  -ap,--alias-password <arg>      Alias Password for alias
  -c,--certificate <arg>          Certificate
