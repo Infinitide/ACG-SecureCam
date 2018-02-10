@@ -45,10 +45,6 @@ public class Logger{
         log("ERROR", msg);
     }
 	
-	public void error(String msg, Exception exception) {
-        log("ERROR", msg, exception);
-    }
-	
 	/**
 	 * Prints error message
 	 * @param	msg	Message to print
