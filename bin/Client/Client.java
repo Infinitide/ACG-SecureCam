@@ -141,7 +141,7 @@ public class Client {
 			LOG.error("Unable to Initialise Connection", e);
 		}
 		if (gui) {
-			initGui(log);
+			initGui();
 		} else {
 			CONNECTION.start(HOST, PORT, SAVETO);
 		}
