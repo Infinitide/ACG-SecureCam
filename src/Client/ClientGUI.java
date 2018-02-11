@@ -205,8 +205,11 @@ public class ClientGUI extends javax.swing.JFrame {
 				LOG.warn("Port needs to be a integer");
 				statBar.setText("Port needs to be a integer");
 			}
-			img.setIcon(new javax.swing.ImageIcon(CONNECTION.getCache()));
-			saveImg.setVisible(true);
+			boolean success = CONNECTION.isSuccess();
+			if (success) {
+				img.setIcon(new javax.swing.ImageIcon(CONNECTION.getCache()));
+				saveImg.setVisible(true);
+			}
 		} else {
 			statBar.setText("Enter valid IP Address");
 		}
