@@ -54,6 +54,7 @@ public class Connection {
 	private KeyPair KEYPAIR;
 	private boolean VALID = false;
 	private Logger LOG;
+	private boolean SUCCESS = true;
 	
 	/**
 	 * Initialise Connection
@@ -151,8 +152,10 @@ public class Connection {
 			});
 			
 			// Closes connection if certificate is invalid
-			if (!VALID)
+			if (!VALID){
 				close(1);
+				return;
+			}
 			
 			LOG.verbose("TLS Handshake successful");
 			LOG.info("Retrieving image from Server");
@@ -262,10 +265,20 @@ public class Connection {
 	 * @param	exitCd	exitCd
 	 */
 	private void close(int exitCd){
-		if (exitCd == 1)
-			LOG.error("Server identity not verified");
-		if (exitCd == 2)
-			LOG.error("Image corrupted");
+		if (exitCd == 1){
+			String msg = "Server identity not verified";
+			LOG.error(msg);
+			if (STATBAR != null)
+				STATBAR.setText(msg);
+			SUCCESS = false;
+		}
+		if (exitCd == 2) {
+			String msg = "Data received is corrupted";
+			LOG.error(msg);
+			if (STATBAR != null)
+				STATBAR.setText(msg);
+			SUCCESS = false;
+		}
 		try {
 			if (CACHE != null)
 				CACHE.flush();
@@ -273,13 +286,14 @@ public class Connection {
 			LOG.verbose("Connection with server closed");
 			
 			// Stops program if exitCd is not 0
-			if (exitCd != 0)
+			if (exitCd != 0 && STATBAR == null)
 				System.exit(1);
 		} catch (IOException e){
 			LOG.error("Unexpected Exception ", e);
 			e.printStackTrace();
 		}
 	}
+	
 	
 	/**
 	 * Cache and verify image received from server
@@ -297,6 +311,7 @@ public class Connection {
 			CACHE = baos;
 			LOG.verbose("Verifying received image");
 			
+			// Verify data recieved is image
 			ImageInputStream imageStream = ImageIO.createImageInputStream(new BufferedInputStream(new ByteArrayInputStream(CACHE.toByteArray())));
 			Iterator<ImageReader> readers = ImageIO.getImageReaders(imageStream);
 			ImageReader reader = null;
@@ -307,8 +322,9 @@ public class Connection {
 				reader = readers.next();
 			}
 			String formatName = reader.getFormatName();
-			if (!formatName.equalsIgnoreCase("jpeg")) 
+			if (!formatName.equalsIgnoreCase("jpeg")) {
 				close(2);
+			}
 			LOG.verbose("Image Verified");
 		} catch (Exception e) {
 			LOG.error("Unable to cache input", e);
@@ -323,6 +339,13 @@ public class Connection {
 		return CACHE.toByteArray();
 	}
 	
+	/**
+	 * For GUI to check if connection is successful
+	 * @return boolean	SUCCESS value
+	 */
+	public boolean isSuccess(){
+		return SUCCESS;
+	}
 	/**
 	 * Converts a byte array to hex
 	 * @param buf[] Byte array which is to be converted to hex String
