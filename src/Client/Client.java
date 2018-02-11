@@ -1,4 +1,3 @@
-package org.securecam;
 import java.io.IOException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;

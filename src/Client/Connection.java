@@ -1,10 +1,11 @@
-package org.securecam;
-import javax.swing.JLabel;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.Iterator;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -21,11 +22,15 @@ import java.security.PrivateKey;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
 import java.security.cert.CertificateFactory;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.security.UnrecoverableKeyException;
+import javax.swing.JLabel;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.crypto.tls.TlsUtils;
 import org.bouncycastle.crypto.tls.Certificate;
@@ -195,7 +200,7 @@ public class Connection {
 				while (true)
 					fos.write(in.readByte());
 			} catch (EOFException ee) {
-				LOG.verbose("Image Saved to file with " + fname);
+				LOG.verbose("Image Saved to file : " + fname);
 				in.close();
 			}
 			fos.flush();
@@ -258,7 +263,9 @@ public class Connection {
 	 */
 	private void close(int exitCd){
 		if (exitCd == 1)
-			LOG.info("Server identity not verified");
+			LOG.error("Server identity not verified");
+		if (exitCd == 2)
+			LOG.error("Image corrupted");
 		try {
 			if (CACHE != null)
 				CACHE.flush();
@@ -267,7 +274,7 @@ public class Connection {
 			
 			// Stops program if exitCd is not 0
 			if (exitCd != 0)
-				System.exit(exitCd);
+				System.exit(1);
 		} catch (IOException e){
 			LOG.error("Unexpected Exception ", e);
 			e.printStackTrace();
@@ -275,7 +282,7 @@ public class Connection {
 	}
 	
 	/**
-	 * Cache image recieved from client
+	 * Cache and verify image received from server
 	 * @param	in	DataInputStream containing the image from the server
 	 */
 	private void cache(DataInputStream in){
@@ -288,6 +295,21 @@ public class Connection {
 				baos.write(buffer, 0, len);
 			baos.flush();
 			CACHE = baos;
+			LOG.verbose("Verifying received image");
+			
+			ImageInputStream imageStream = ImageIO.createImageInputStream(new BufferedInputStream(new ByteArrayInputStream(CACHE.toByteArray())));
+			Iterator<ImageReader> readers = ImageIO.getImageReaders(imageStream);
+			ImageReader reader = null;
+			if (!readers.hasNext()) {
+				  imageStream.close();
+				  return;
+			} else {
+				reader = readers.next();
+			}
+			String formatName = reader.getFormatName();
+			if (!formatName.equalsIgnoreCase("jpeg")) 
+				close(2);
+			LOG.verbose("Image Verified");
 		} catch (Exception e) {
 			LOG.error("Unable to cache input", e);
 		}

@@ -1,4 +1,3 @@
-package org.securecam;
 import java.net.URL;
 import java.net.Socket;
 import java.net.SocketException;
