@@ -1,4 +1,3 @@
-package org.securecam;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.*;
 

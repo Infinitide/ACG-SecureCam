@@ -1,4 +1,3 @@
-package org.securecam;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 

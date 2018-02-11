@@ -1,4 +1,3 @@
-package org.securecam;
 import java.net.InetAddress;
 import java.security.Key;
 import java.security.KeyPair;
