@@ -24,12 +24,12 @@ javac -cp ../lib/*;. Client.java
 ## Prerequisites
 
 ### Server
-Ensure that the Certificate Authority's cert is in the Server's Directory [ca.crt](dist/Server/ca.crt)
-Ensure that a keystore (in PKCS#12 format) with the Server's private certificate in the Server's directory [dist/Server/securecam.server.pkcs12](dist/Server/securecam.server.pkcs12)
+Ensure that the Certificate Authority's cert is in the Server's Directory [ca.crt](dist/Server/ca.crt)<br>
+Ensure that a keystore (in PKCS#12 format) with the Server's private certificate is in the Server's directory [dist/Server/securecam.server.pkcs12](dist/Server/securecam.server.pkcs12)
 
 ### Client
-Ensure that the Certificate Authority's cert is in the Client Directory [ca.crt](dist/Client/ca.crt)
-Ensure that a keystore (in PKCS#12 format) with the Client's private certificate in the Client's directory [dist/Client/securecam.client.pkcs12](dist/Client/securecam.client.pkcs12)
+Ensure that the Certificate Authority's cert is in the Client Directory [ca.crt](dist/Client/ca.crt)<br>
+Ensure that a keystore (in PKCS#12 format) with the Client's private certificate is in the Client's directory [dist/Client/securecam.client.pkcs12](dist/Client/securecam.client.pkcs12)
 
 ## Using the Program
 Compiled program with its relevant files can be found in [dist](dist)
