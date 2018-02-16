@@ -76,3 +76,8 @@ usage: java -jar Client.jar <options>
  -s,--server <arg>               Address which server listens on
  -v,--verbose                    Verbose Output
 ```
+
+## License/Copyright
+This repository contains the source code, in partial fulfilment, for the module ST2504, Applied Cryptography.
+As such, this project will not be maintained and all rights belong to the project contributors.
+Third party resources may be reused in accordance to their license and/or terms and conditions.
